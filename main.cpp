@@ -56,9 +56,11 @@ int main(int argc, char** argv)
     /* Correct motion matrix and shape matrix */
     std::cerr << "Performing Euclidean upgrading...\n";
     tomasiKanade.CorrectOrthographic();
+    // tomasiKanade.CorrectWeakPerspective();
 
     /* Estimate camera poses (translations and rotations) */
     tomasiKanade.EstimateCameraPoseOrthographic();
+    // tomasiKanade.EstimateCameraPoseWeakPerspective();
 
     /* Retrieve shape matrix and motion matrix */
     const Eigen::MatrixXd& shapeMat = tomasiKanade.ShapeMatrix();
@@ -120,6 +122,7 @@ int main(int argc, char** argv)
         cv::circle(featurePointsFrame, points2D[i],
                     2, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
 
+    cv::imshow("First Frame", firstFrame);
     cv::imshow("Tracked Points", featurePointsFrame);
 
     /* Show 3D reconstruction results */
@@ -148,6 +151,8 @@ int main(int argc, char** argv)
             static_cast<float>(translationVectors[i].z()) };
         const cv::viz::WSphere pointSphere {
             point3D, 5.0, 10, cv::viz::Color::green() };
+        /* const cv::viz::WSphere pointSphere {
+            point3D, 50.0, 10, cv::viz::Color::green() }; */
         const std::string id = "Cameras-" + std::to_string(i);
         vizResults.showWidget(id, pointSphere);
     }
