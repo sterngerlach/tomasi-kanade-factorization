@@ -210,22 +210,21 @@ bool TomasiKanade::EstimateCameraPoseWeakPerspective()
     this->mRotationMatrices.reserve(this->mPointTracker.NumOfFrames());
 
     for (std::size_t i = 0; i < this->mPointTracker.NumOfFrames(); ++i) {
-        const double metricCond0 = this->mUMat.row(2 * i) *
-                                   this->mMetricMat *
-                                   this->mUMat.row(2 * i).transpose();
-        const double metricCond1 = this->mUMat.row(2 * i + 1) *
-                                   this->mMetricMat *
-                                   this->mUMat.row(2 * i + 1).transpose();
+        const double metricCond0 = this->mMotionMat.row(2 * i) *
+                                   this->mMotionMat.row(2 * i).transpose();
+        const double metricCond1 = this->mMotionMat.row(2 * i + 1) *
+                                   this->mMotionMat.row(2 * i + 1).transpose();
         Eigen::Vector3d transVec;
         transVec[2] = std::sqrt(2.0 / (metricCond0 + metricCond1));
         transVec[0] = transVec[2] * this->mCentroidPoints[i][0];
         transVec[1] = transVec[2] * this->mCentroidPoints[i][1];
-        
+
         Eigen::Matrix3d rotationMat;
-        rotationMat.col(0) = this->mMotionMat.row(2 * i);
-        rotationMat.col(1) = this->mMotionMat.row(2 * i + 1);
-        rotationMat.col(2) = Eigen::Vector3d::Zero();
-        rotationMat *= transVec[2];
+        rotationMat.col(0) =
+            this->mMotionMat.row(2 * i).transpose() * transVec[2];
+        rotationMat.col(1) =
+            this->mMotionMat.row(2 * i + 1).transpose() * transVec[2];
+        rotationMat.col(2) = Eigen::Vector3d::Zero().transpose();
 
         Eigen::JacobiSVD<Eigen::MatrixXd> jacobiSvd {
             rotationMat, Eigen::ComputeThinU | Eigen::ComputeThinV };
@@ -236,6 +235,8 @@ bool TomasiKanade::EstimateCameraPoseWeakPerspective()
         Eigen::Matrix3d actualRotationMat =
             jacobiSvd.matrixU() * diagVec.asDiagonal() *
             jacobiSvd.matrixV().transpose();
+
+        transVec = -actualRotationMat * transVec;
 
         this->mTranslationVectors.push_back(std::move(transVec));
         this->mRotationMatrices.push_back(std::move(actualRotationMat));
